@@ -47,11 +47,12 @@ type cloudInitConfig struct {
 		ID0     interface{} `yaml:"id0"`
 		Dhcp4   bool        `yaml:"dhcp4"`
 	} `yaml:"network"`
-	Mounts     [][]string  `yaml:"mounts"`
-	WriteFiles []writeFile `yaml:"write_files"`
+	Mounts            [][]string  `yaml:"mounts"`
+	WriteFiles        []writeFile `yaml:"write_files"`
+	SSHAuthorizedKeys []string    `yaml:"ssh_authorized_keys"`
 }
 
-func createUserdata(nextUsername string, nextPassword string, nextCloudBaseUrl string) map[string]string {
+func createUserdata(nextUsername string, nextPassword string, nextCloudBaseUrl string, publicKeys []string) map[string]string {
 	var Userdata cloudInitConfig
 
 	Userdata.Network.Version = 2
@@ -71,6 +72,7 @@ func createUserdata(nextUsername string, nextPassword string, nextCloudBaseUrl s
 		Permissions: "0600"},
 	// New write_files should be added here as []writeFile
 	}
+	Userdata.SSHAuthorizedKeys = publicKeys
 
 	out, _ := yaml.Marshal(Userdata)
 
@@ -79,7 +81,7 @@ func createUserdata(nextUsername string, nextPassword string, nextCloudBaseUrl s
 	return map[string]string{"userdata": headerComment + string(out)}
 }
 
-func CreateSecret(name string, namespace string, nextUsername string, nextPassword string, nextCloudBaseUrl string) corev1.Secret {
+func CreateSecret(name string, namespace string, nextUsername string, nextPassword string, nextCloudBaseUrl string, publicKeys []string) corev1.Secret {
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name + "-secret",
@@ -89,7 +91,8 @@ func CreateSecret(name string, namespace string, nextUsername string, nextPasswo
 		StringData: createUserdata(
 			nextUsername,
 			nextPassword,
-			nextCloudBaseUrl),
+			nextCloudBaseUrl,
+			publicKeys),
 		Type: corev1.SecretTypeOpaque,
 	}
 
@@ -465,4 +468,20 @@ func CheckLabels(ns v1.Namespace, matchLabels map[string]string) bool {
 		}
 	}
 	return true
+}
+
+func GetPublicKeys(c client.Client, ctx context.Context, log logr.Logger, namespace string, tenantName string, publicKeys *[]string) error {
+	tenant := crownlabsv1alpha1.Tenant{}
+	nsdName := types.NamespacedName{
+		Namespace: namespace,
+		Name:      tenantName,
+	}
+	if err := c.Get(ctx, nsdName, &tenant); err == nil {
+
+		*publicKeys = append(*publicKeys, tenant.Spec.PublicKeys...)
+
+		return nil
+	} else {
+		return err
+	}
 }
