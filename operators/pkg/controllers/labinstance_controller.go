@@ -147,9 +147,18 @@ func (r *LabInstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	if err != nil {
 		log.Error(err, "unable to get Webdav Credentials")
 	} else {
-		log.Info("Webdav secrets obtained. Building cloud-init script." + labInstance.Name)
+		log.Info("Webdav secrets obtained. Getting public keys." + labInstance.Name)
 	}
-	secret := instanceCreation.CreateSecret(name, namespace, user, password, r.NextcloudBaseUrl)
+
+	var publicKeys []string
+	err := instanceCreation.GetPublicKeys(r.Client, ctx, log, labInstance.Namespace, labInstance.spec.StudentID, &publicKeys)
+	if err != nil {
+		log.Error(err, "unable to get public keys")
+	} else {
+		log.Info("Public keys obtained. Building cloud-init script." + labInstance.Name)
+	}
+
+	secret := instanceCreation.CreateSecret(name, namespace, user, password, r.NextcloudBaseUrl, publicKeys)
 	secret.SetOwnerReferences(labiOwnerRef)
 	if err := instanceCreation.CreateOrUpdate(r.Client, ctx, log, secret); err != nil {
 		setLabInstanceStatus(r, ctx, log, "Could not create secret "+secret.Name+" in namespace "+secret.Namespace, "Warning", "SecretNotCreated", &labInstance, "", "")
