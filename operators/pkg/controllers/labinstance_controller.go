@@ -151,8 +151,7 @@ func (r *LabInstanceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	}
 
 	var publicKeys []string
-	err := instanceCreation.GetPublicKeys(r.Client, ctx, log, labInstance.Namespace, labInstance.spec.StudentID, &publicKeys)
-	if err != nil {
+	if err := instanceCreation.GetPublicKeys(r.Client, ctx, log, labInstance.Namespace, labInstance.Spec.StudentID, &publicKeys); err != nil {
 		log.Error(err, "unable to get public keys")
 	} else {
 		log.Info("Public keys obtained. Building cloud-init script." + labInstance.Name)
