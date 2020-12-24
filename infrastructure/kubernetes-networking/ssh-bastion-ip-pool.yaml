@@ -1,0 +1,10 @@
+apiVersion: projectcalico.org/v3
+kind: IPPool
+metadata:
+  name: crownlabs.ssh-bastion-ippool
+spec:
+  cidr: 172.17.0.0/26
+  ipipMode: CrossSubnet
+  natOutgoing: true
+  disabled: false
+  nodeSelector: "!all()"
