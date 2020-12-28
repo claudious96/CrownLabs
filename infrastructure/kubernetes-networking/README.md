@@ -12,6 +12,19 @@ $ curl https://docs.projectcalico.org/${CALICO_VERSION}/manifests/calico.yaml -o
 $ kubectl apply -k .
 ```
 
+## SSH bastion IP pool creation
+In order to distinguish ssh requests that come from outside the cluster from the ones that come from inside the cluster (i.e. using a client VM) an IP pool is used.
+
+The sshd configuration inside VMs should have a rule restricting authentication to public key only if the source IP belongs to the IP pool, both public key and password authentication otherwise.
+
+In order to create the IP pool, calicoctl is needed. To install it follow the instructions in the [official documentation](https://docs.projectcalico.org/archive/v3.16/getting-started/clis/calicoctl/install).
+```bash
+calicoctl apply -f ssh-bastion-ip-pool.yaml
+# or using calicoctl as kubectl plugin
+kubectl calico apply -f ssh-bastion-ip-pool.yaml 
+```
+
 ## Selected cluster networking configuration
 - IP addresses of pods: 172.16.0.0/16
 - IP addresses of services: 10.96.0.0/12
+- IP addresses of ssh-bastion pods: 172.17.0.0/26
